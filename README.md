@@ -21,14 +21,35 @@ This directory contains benchmarks for various Inter-Process Communication (IPC)
 - Supports both TCP and IPC transports
 
 ### 4. cpp-ipc (`cppipc_test.cc`)
-- Using cpp-ipc library
-- Producer-Consumer pattern
-- Based on shared memory with optimized synchronization
+#### Channel Mode (cppipc_channel_test)
+- Single direction communication
+- Producer-consumer pattern
+- Shared memory based
+- Lock-free implementation
+
+#### Route Mode (cppipc_route_test)
+- Optimized for SPSC (Single Producer Single Consumer)
+- Supports one writer and up to 32 readers
+- Lock-free shared memory implementation
+- Better for unidirectional communication
 
 ### 5. AlephZero (`ale_test.cc`)
 - Using AlephZero library
 - RPC pattern
 - Based on shared memory with robust error handling
+
+### 6. Boost.Interprocess
+#### Message Queue (boost_mq_test)
+- Uses POSIX message queue
+- Fixed message size
+- Blocking operations
+- High performance for small messages
+
+#### Shared Memory (boost_shm_test)
+- Direct shared memory access
+- Custom synchronization
+- Memory mapped file based
+- Good for large messages
 
 ## Test Methodology
 
@@ -116,7 +137,14 @@ Message size is fixed at 32 bytes for consistent comparison.
 
 ```bash
 # Build all benchmarks
-make
+g++ -o shm_test ./shm_test.cc -pthread -l
+g++ -o boost_shm_test boost_shm_test.cc -I${BOOST_HOME}/include -pthread -lrt 
+g++ -o boost_mq_test boost_mq_test.cc -I${BOOST_HOME}/include -pthread -lrt 
+g++ -o ./cppipc_channel_test ./cppipc_channel_test.cc -I${CPPIPC_HOME}/include -L${CPPIPC_HOME}/lib -lipc -pthread -lrt
+g++ -o ./cppipc_route_test ./cppipc_route_test.cc -I/home/public/cppipc/include -L/home/public/cppipc/lib -lipc -lpthread -lrt
+g++ ./zmq_test.cc -o zmq_test -I${ZEROMQ_HOME}/include -L${ZEROMQ_HOME}/lib64 -lzmq -pthread -lrt
+g++ ./nng_test.cc -o nng_test -I${NNG_HOME}/include -L${NNG_HOME}/lib64 -lnng -pthread -lrt 
+g++ -o ale_test ale_test.cc -I${ALEPHZERO_HOME}/include -L${ALEPHZERO_HOME}/lib -lalephzero -pthread 
 
 # Run individual tests
 ./shm_test

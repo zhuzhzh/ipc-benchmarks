@@ -18,6 +18,10 @@ void server_node() {
     ipc::channel req_channel{REQ_CHANNEL, ipc::receiver};
     ipc::channel resp_channel{RESP_CHANNEL, ipc::sender};
     
+    // Wait for client to connect
+    req_channel.wait_for_recv(1);
+    resp_channel.wait_for_recv(1);
+    
     // Echo back messages
     for (int i = 0; i < WARMUP_COUNT + TEST_COUNT; i++) {
         // Receive request
@@ -34,6 +38,10 @@ void server_node() {
             return;
         }
     }
+    
+    // Clean up
+    req_channel.disconnect();
+    resp_channel.disconnect();
 }
 
 void client_node() {
@@ -41,15 +49,13 @@ void client_node() {
     ipc::channel req_channel{REQ_CHANNEL, ipc::sender};
     ipc::channel resp_channel{RESP_CHANNEL, ipc::receiver};
     
-    // Add a small delay before starting
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    // Wait for server to be ready
+    std::cout << "Waiting for server...\n";
+    req_channel.wait_for_recv(1);
+    resp_channel.wait_for_recv(1);
     
     // Pre-allocate buffers
     std::vector<char> send_buf(MSG_SIZE, 'A');
-    
-    // Wait for server to be ready
-    std::cout << "Waiting for server...\n";
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     
     // Warmup
     std::cout << "Starting warmup...\n";
@@ -92,9 +98,9 @@ void client_node() {
         auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
         latencies.push_back(duration.count());
 
-        //if ((i + 1) % 100 == 0) {
-        //    std::cout << "Completed " << (i + 1) << " iterations\n";
-        //}
+        if ((i + 1) % 100 == 0) {
+            std::cout << "Completed " << (i + 1) << " iterations\n";
+        }
     }
 
     // Calculate statistics
